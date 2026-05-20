@@ -114,4 +114,46 @@ Fracture-coalesce maps perfectly to GPU architecture:
 
 The [GPU benchmarks](../gpu/index.md) show this hitting **20.8 billion checks/sec** in batch mode — exactly the fracture-coalesce pattern.
 
-**Next:** How correctness accumulates over time → [Sediment](sediment.md)
+## Code Example
+
+```python
+from flux_lib import DependencyGraph, fracture, coalesce
+
+# Define which dimensions each constraint touches
+# Constraint 0 → temp, Constraint 1 → pressure, etc.
+graph = DependencyGraph.from_masks([
+    [0],         # C0: temp only
+    [1],         # C1: pressure only
+    [2, 3],      # C2: flow_rate + total_flow (linked)
+    [4],         # C3: vibration
+    [5],         # C4: humidity
+    [6, 7],      # C5: rpm + power (linked)
+    [4],         # C6: vibration (shares with C3)
+    [0],         # C7: temp (shares with C0)
+])
+
+# Fracture into independent blocks
+result = fracture(graph)
+print(f"Blocks: {result.n_blocks}")       # 6
+print(f"Speedup: {result.speedup:.1f}x")  # up to 6.0x
+
+# Each block produces its own error mask
+block_masks = [0b00000001, 0b00000000, 0b00000100,
+               0b00001000, 0b00000000, 0b00000000]
+
+# Coalesce with a single OR per block
+final = coalesce(block_masks)
+print(f"Final mask: {final:08b}")  # 00001101
+```
+
+→ **Package:** [`flux-lib` (Python)](../api/python.md) · [`flux-fracture` (Rust)](../api/rust.md) · [`@flux/check` (JS)](../api/javascript.md) · [`flux_fracture.h` (C)](../api/c.md)
+
+## When Would I Use This?
+
+- **Multi-core constraint checking.** If you have more constraints than cores, fracture-coalesce lets you split the work across available parallelism. The proof guarantees you don't lose any violations.
+- **GPU workloads.** Each independent block maps to a CUDA thread block or OpenCL workgroup. The coalescence step is a warp-level reduction — essentially free.
+- **Distributed checking.** Split blocks across machines, coalesce the masks. Zero coordination needed beyond the final OR.
+- **Mixed constraint systems.** Some constraints share dimensions (linked), some don't. Fracture finds the natural parallelism without manual partitioning.
+- **Adaptive systems.** When constraints change at runtime, adaptive re-fracture updates the parallelism plan in microseconds.
+
+**See also:** [Error Masks](error-mask.md) — the data structure being coalesced · [Sediment](sediment.md) — corrections applied after coalescence · [GPU Benchmarks](../gpu/index.md) — 20.8B checks/sec with fracture-coalesce · [Getting Started](../getting-started.md)

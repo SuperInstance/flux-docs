@@ -107,6 +107,98 @@ int main() {
 - Blocks allocated with `malloc` — call `frac_result_free()` when done.
 - Total working memory for 256 constraints: ~2KB.
 
+## check_vector — Detailed Single Check
+
+```c
+typedef struct {
+    bool violated;
+    bool is_nan;
+    bool below_lo;
+    bool above_hi;
+} frac_vector_result;
+
+frac_vector_result frac_check_vector(double val, double lo, double hi) {
+    frac_vector_result r = {0};
+    r.is_nan = isnan(val);
+    r.below_lo = !r.is_nan && (val < lo);
+    r.above_hi = !r.is_nan && (val > hi);
+    r.violated = r.is_nan || r.below_lo || r.above_hi;
+    return r;
+}
+
+/* Usage */
+frac_vector_result r = frac_check_vector(158.0, -40.0, 150.0);
+// r.violated = true, r.above_hi = true
+```
+
+## Serialization
+
+```c
+/* Serialize constraint config to JSON string */
+char* frac_engine_to_json(const double* lo, const double* hi,
+                          const char** names, int n);
+
+/* Deserialize from JSON string */
+typedef struct {
+    double* lo;
+    double* hi;
+    char** names;
+    int n;
+} frac_engine_config;
+
+frac_engine_config frac_engine_from_json(const char* json_str);
+void frac_engine_config_free(frac_engine_config* cfg);
+```
+
+| Function | Description |
+|----------|-------------|
+| `frac_engine_to_json(lo, hi, names, n)` | Serialize to JSON string (caller frees) |
+| `frac_engine_from_json(str)` | Parse JSON to config struct |
+| `frac_engine_config_free(cfg)` | Free config memory |
+
+## Aggregation
+
+```c
+/* Batch check: check n_sets of values against one set of bounds */
+uint8_t* frac_batch_check(const double* values, int n_values, int n_sets,
+                           const double* lo, const double* hi, int n_bounds);
+
+/* Aggregate: bitwise OR of all masks */
+uint8_t frac_aggregate_masks(const uint8_t* masks, int n);
+
+/* Per-constraint violation frequency */
+int* frac_violation_frequency(const uint8_t* masks, int n_masks, int n_constraints);
+```
+
+| Function | Description |
+|----------|-------------|
+| `frac_batch_check(...)` | Returns array of masks (caller frees) |
+| `frac_aggregate_masks(masks, n)` | Bitwise OR of all masks |
+| `frac_violation_frequency(masks, n, nc)` | Per-constraint counts (caller frees) |
+
+## Drift Detection
+
+```c
+typedef struct {
+    double rate;
+    bool is_drifting;
+    double acceleration;
+    double predicted_next;
+    int readings_to_violation;  /* -1 if not drifting toward limit */
+} frac_drift_result;
+
+frac_drift_result frac_detect_drift(const double* series, int n,
+                                     double threshold, int window,
+                                     double bound_hi);
+
+/* Usage */
+double coolant[] = {92, 95, 102, 115, 148};
+frac_drift_result drift = frac_detect_drift(coolant, 5, 5.0, 3, 150.0);
+printf("Rate: %.1f\n", drift.rate);                   // 18.7
+printf("Drifting: %s\n", drift.is_drifting ? "yes" : "no"); // yes
+printf("Predicted: %.1f\n", drift.predicted_next);    // 166.3
+```
+
 ## Invariants
 
 1. **Zero false negatives** — bitwise OR coalescence is provably correct.

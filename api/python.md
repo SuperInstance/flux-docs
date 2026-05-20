@@ -103,6 +103,105 @@ stack.add_layer(
 result = stack.apply(base_mask, names, values, definitions)
 ```
 
+## check_vector — Detailed Single Check
+
+```python
+from flux_lib import check_vector
+
+result = check_vector(158, -40, 150)
+# CheckResult(violated=True, is_nan=False, below_lo=False, above_hi=True)
+
+result = check_vector(float("nan"), 0, 100)
+# CheckResult(violated=True, is_nan=True, below_lo=False, above_hi=False)
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `violated` | `bool` | True if value is outside bounds or NaN |
+| `is_nan` | `bool` | True if value is NaN |
+| `below_lo` | `bool` | True if value < lower bound |
+| `above_hi` | `bool` | True if value > upper bound |
+
+## Serialization
+
+```python
+import json
+
+# Serialize engine config to dict
+config = engine.to_dict()
+# {"constraints": [{"name": "coolant_temp", "lo": -40, "hi": 150}, ...]}
+
+# Save to JSON file
+with open("config.json", "w") as f:
+    json.dump(config, f, indent=2)
+
+# Load from JSON
+with open("config.json") as f:
+    config = json.load(f)
+
+engine2 = ConstraintEngine.from_dict(config)
+
+# Serialize/deserialize sediment stack
+stack_config = stack.to_dict()
+stack2 = SedimentStack.from_dict(stack_config)
+```
+
+| Method | Description |
+|--------|-------------|
+| `engine.to_dict()` | Serialize constraints to a plain dict |
+| `ConstraintEngine.from_dict(d)` | Rebuild engine from dict |
+| `stack.to_dict()` | Serialize sediment layers |
+| `SedimentStack.from_dict(d)` | Rebuild stack from dict |
+
+## Aggregation
+
+```python
+from flux_lib import aggregate_masks, batch_check
+
+# Batch check multiple readings
+results = batch_check(engine, readings)
+
+# Aggregate: bitwise OR of all masks (worst case)
+worst = aggregate_masks([r.error_mask for r in results])
+
+# Aggregate: count violations per constraint
+from flux_lib import violation_frequency
+freqs = violation_frequency([r.error_mask for r in results], engine.constraint_names)
+# {"coolant_temp": 3, "rpm": 1, ...}
+```
+
+| Function | Description |
+|----------|-------------|
+| `batch_check(engine, readings)` | Check multiple reading dicts |
+| `aggregate_masks(masks)` | Bitwise OR of all masks |
+| `violation_frequency(masks, names)` | Count per-constraint violations |
+
+## Drift Detection
+
+```python
+from flux_lib import detect_drift
+
+drift = detect_drift(
+    series=[92, 95, 102, 115, 148],
+    threshold=5.0,     # flag if rate exceeds this
+    window=3,          # look-back window
+    bound_hi=150       # upper limit for prediction
+)
+print(drift.rate)               # 18.7 units/reading
+print(drift.is_drifting)        # True
+print(drift.acceleration)       # 7.4 units/reading²
+print(drift.predicted_next)     # 166.3
+print(drift.readings_to_violation)  # <1
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rate` | `float` | Current rate of change |
+| `is_drifting` | `bool` | True if rate exceeds threshold |
+| `acceleration` | `float` | Second derivative (rate of rate) |
+| `predicted_next` | `float` | Projected next value |
+| `readings_to_violation` | `int or None` | Estimated readings until limit hit |
+
 ## Invariants
 
 1. **Zero false negatives** — a value outside bounds is ALWAYS detected.

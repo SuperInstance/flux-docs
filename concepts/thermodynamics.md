@@ -95,4 +95,61 @@ FLUX's precision classes (INT8, FP16, FP32, FP64) are *renormalization-like* sca
 
 This is the RG flow of constraint checking: coarse-grain (lower precision) and the effective theory changes. The critical point (where accuracy drops sharply) is between INT8 and FP16.
 
+## Code Example
+
+```python
+import math
+from flux_lib import ConstraintEngine
+
+# Simulate temperature-based soft constraints
+engine = ConstraintEngine()
+engine.add_constraint("temp", -40, 150)
+engine.add_constraint("pressure", 0, 100)
+engine.add_constraint("rpm", 800, 3600)
+
+# Check at different “temperatures” (strictness levels)
+def soft_check(engine, values, temperature=1.0):
+    result = engine.check(values)
+    # Compute “energy” — total violation weight
+    n_constraints = 3
+    violation_weights = [1.0] * n_constraints
+    kT = temperature
+
+    energy = sum(
+        w * math.exp(-w / kT) / (1 + math.exp(-w / kT))
+        for w in violation_weights
+    )
+
+    # Entropy as alarm: spikes mean new violation patterns
+    Z = math.prod(1 + math.exp(-w / kT) for w in violation_weights)
+    entropy = math.log(Z) + energy / kT
+
+    return {
+        "error_mask": result.error_mask,
+        "energy": energy,
+        "entropy": entropy,
+        "interpretation": "loose" if temperature > 5 else "strict"
+    }
+
+# Strict mode (production)
+print(soft_check(engine, {"temp": 151, "pressure": 50, "rpm": 9999}, temperature=0.01))
+# → energy near max, mask = violations detected
+
+# Permissive mode (testing — see all violations)
+print(soft_check(engine, {"temp": 151, "pressure": 50, "rpm": 9999}, temperature=100))
+# → energy spread, entropy high
+```
+
+→ **Package:** [`flux-lib` (Python)](../api/python.md) · [`flux-fracture` (Rust)](../api/rust.md) · [`@flux/check` (JS)](../api/javascript.md) · [`flux_fracture.h` (C)](../api/c.md)
+
+## When Would I Use This?
+
+- **Soft constraint tuning.** You want constraints that can be relaxed during testing but enforced strictly in production. Temperature is a single knob that interpolates between permissive and strict.
+- **Anomaly detection.** Monitor your constraint system's entropy over time. A sudden spike means the underlying data distribution changed — something new is going wrong.
+- **Resource optimization.** The free energy F = E − TS tells you the cost of running at a given strictness. Minimize F to find the sweet spot between catching violations and avoiding false alarms.
+- **Multi-environment deployments.** Use high T during development (see everything), medium T during staging (catch likely issues), low T in production (zero tolerance).
+- **Theoretical work.** The partition function factorizes exactly for independent constraints — this isn't an approximation. Use it for proofs, not just metaphors.
+
+**See also:** [Error Masks](error-mask.md) — the bits that encode energy states · [Fracture-Coalesce](fracture-coalesce.md) — why independent constraints factorize · [GPU Benchmarks](../gpu/index.md) — precision classes as renormalization · [Getting Started](../getting-started.md)
+
 **Next:** See all 96 language implementations → [Languages](../languages/index.md)

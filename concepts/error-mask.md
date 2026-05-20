@@ -2,6 +2,8 @@
 
 The fundamental data structure of FLUX. Everything else is built on top of this.
 
+One bit per constraint. Eight constraints fit in a single byte. That's the whole idea — and it's why FLUX hits 24.9 billion checks per second.
+
 ## One Bit Per Constraint
 
 8 constraints = 1 byte. 64 constraints = 1 `uint64`. No arrays. No heap. No indirection.
@@ -80,8 +82,39 @@ One line. One bit. No allocation. This compiles to 3-4 instructions on any CPU: 
 
 **This is why FLUX hits 24.9 billion checks per second.** The data structure was chosen to match the hardware, not the programmer's intuition.
 
+## Code Example
+
+```python
+from flux_lib import ConstraintEngine, error_mask
+
+engine = ConstraintEngine()
+engine.add_constraint("temp", -40, 150)
+engine.add_constraint("pressure", 0, 100)
+engine.add_constraint("rpm", 800, 3600)
+
+result = engine.check({"temp": 151, "pressure": 50, "rpm": 9999})
+
+# Inspect the mask
+print(f"Mask: {result.error_mask:08b}")   # which bits are set
+print(f"Any violation? {result.error_mask != 0}")  # single instruction
+print(f"Count: {bin(result.error_mask).count('1')}")  # popcount
+
+# Check a specific constraint
+if result.error_mask & (1 << 0):
+    print("Temperature violated!")
+```
+
+→ **Package:** [`flux-lib` (Python)](../api/python.md) · [`flux-fracture` (Rust)](../api/rust.md) · [`@flux/check` (JS)](../api/javascript.md) · [`flux_fracture.h` (C)](../api/c.md)
+
+## When Would I Use This?
+
+- **Any system that checks bounds.** If you're comparing values against limits, the error mask is a drop-in replacement for boolean lists, sets, or enum results — with better performance and simpler logic.
+- **GPU / embedded targets.** Error masks need zero heap allocation and map to hardware bitwise operations. They work on microcontrollers, GPUs, and everything in between.
+- **Merging results from parallel checks.** Bitwise OR merges error masks in one CPU instruction. No loop, no allocation, no overhead.
+- **Batch processing.** One byte per row means millions of rows fit in L1 cache. The mask *is* the index.
+
 ## What About More Than 64 Constraints?
 
 Use `uint64` chunks. 256 constraints = 4 `uint64`s. All the same operations work with SIMD (OR four lanes at once). The principle doesn't change — it just gets wider.
 
-**Next:** The bug that proved why the NaN check matters → [NaN Trap](nan-trap.md)
+**See also:** [NaN Trap](nan-trap.md) — why the NaN bit must always be set · [Fracture-Coalesce](fracture-coalesce.md) — OR-merging masks from parallel blocks · [Sediment](sediment.md) — layering corrections on top of the mask · [Getting Started](../getting-started.md)

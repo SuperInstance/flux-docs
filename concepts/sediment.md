@@ -92,4 +92,54 @@ Geological metaphor:
 
 The constraint engine's sediment stack IS the fossil record of its correctness. Never delete. Only supersede. COBOL computes. MUMPS remembers.
 
+## Code Example
+
+```python
+from flux_lib import SedimentStack
+
+# Create a sediment stack on top of an engine
+stack = SedimentStack()
+
+# Layer 1: pressure sensor dropout — value of 0 means disconnected
+stack.add_layer(
+    context="Pressure sensor dropout at value=0",
+    corrections=[{"constraint": "pressure", "action": "violate", "if_value": 0}]
+)
+
+# Layer 2: rapid sensor drop — reading 0 when last reading was >50
+stack.add_layer(
+    context="Sensor drop detection",
+    corrections=[{"constraint": "temp", "action": "violate", "if_value": 0,
+                  "if_prev_gt": 50}]
+)
+
+# Layer 3: flow sensor false positive at max range
+stack.add_layer(
+    context="Flow rate max-range false positive",
+    corrections=[{"constraint": "flow_rate", "action": "clear", "if_value": 10.0}]
+)
+
+# Apply: base check runs first, then each layer runs on top
+result = stack.apply(base_mask=0b00000000,
+                      names=["temp", "pressure", "flow_rate", "vibration",
+                             "humidity", "rpm", "voltage", "current"],
+                      values=[0, 0, 10.0, 2.0, 50, 2000, 220, 5.0],
+                      definitions=[(-40, 150), (0, 100), (0.5, 10), (0, 5),
+                                   (10, 95), (800, 3600), (110, 240), (0.1, 15)])
+print(f"Corrected mask: {result.error_mask:08b}")
+print(f"Layers applied: {result.layers_applied}")
+```
+
+→ **Package:** [`flux-lib` (Python)](../api/python.md) · [`flux-fracture` (Rust)](../api/rust.md) · [`@flux/check` (JS)](../api/javascript.md) · [`flux_fracture.h` (C)](../api/c.md)
+
+## When Would I Use This?
+
+- **Long-running systems.** Deploy once, add corrections over time without changing the hot path. Each edge case becomes a layer, not a code change.
+- **Sensor validation.** Physical sensors have quirks that pure bounds can't capture — dropout, drift, false positives at range edges. Sediment layers handle these as targeted corrections.
+- **Regulatory compliance.** Each layer documents *why* a correction was added and *when*. The sediment stack is an audit trail.
+- **Zero-downtime updates.** Add a sediment layer without restarting the engine. The frozen core never changes; only the corrections grow.
+- **Any system that accumulates edge cases.** If you find yourself adding `if` statements to handle special cases, sediment formalizes the pattern.
+
+**See also:** [Error Masks](error-mask.md) — the base data structure · [NaN Trap](nan-trap.md) — the first edge case that inspired sediment · [Fracture-Coalesce](fracture-coalesce.md) — the parallel check before sediment · [Getting Started](../getting-started.md)
+
 **Next:** What physics has to do with constraint systems → [Thermodynamics](thermodynamics.md)

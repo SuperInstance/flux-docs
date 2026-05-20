@@ -52,6 +52,18 @@ The six old-language repos each teach a specific lesson:
 | [JavaScript](api/javascript.md) | `@flux/check` — `npm install @flux/check` |
 | [C](api/c.md) | `flux_fracture.h` — single-header, no dependencies |
 
+### Tutorials
+
+| Page | What You'll Learn |
+|------|-------------------|
+| [Sensor Dashboard](tutorials/sensor-dashboard.md) | Build a complete 8-sensor monitoring system: batch validation, drift detection, sediment, save/load config. |
+
+### FAQ
+
+| Page | What You'll Find |
+|------|------------------|
+| [FAQ](faq.md) | Common questions about error masks, NaN, fracture-coalesce, sediment, thermodynamics, and practical usage. |
+
 ### Research
 
 | Page | What You'll Learn |
@@ -62,12 +74,14 @@ The six old-language repos each teach a specific lesson:
 ## Reading Order
 
 1. **Start**: [Index](index.md) → [Getting Started](getting-started.md)
-2. **Core concepts**: [Error Masks](concepts/error-mask.md) → [NaN Trap](concepts/nan-trap.md) → [Fracture-Coalesce](concepts/fracture-coalesce.md)
-3. **Deeper theory**: [Sediment](concepts/sediment.md) → [Thermodynamics](concepts/thermodynamics.md)
-4. **Language insights**: [96 Languages](languages/index.md) → [Old Architecture](languages/old-architecture.md)
-5. **Performance**: [GPU Benchmarks](gpu/index.md)
-6. **Integration**: API for your language
-7. **Full picture**: [Research](research/index.md) → [Grand Synthesis](research/grand-synthesis.md)
+2. **Tutorial**: [Sensor Dashboard](tutorials/sensor-dashboard.md)
+3. **Core concepts**: [Error Masks](concepts/error-mask.md) → [NaN Trap](concepts/nan-trap.md) → [Fracture-Coalesce](concepts/fracture-coalesce.md)
+4. **Deeper theory**: [Sediment](concepts/sediment.md) → [Thermodynamics](concepts/thermodynamics.md)
+5. **Language insights**: [96 Languages](languages/index.md) → [Old Architecture](languages/old-architecture.md)
+6. **Performance**: [GPU Benchmarks](gpu/index.md)
+7. **Integration**: API for your language
+8. **Full picture**: [Research](research/index.md) → [Grand Synthesis](research/grand-synthesis.md)
+9. **Questions**: [FAQ](faq.md)
 
 ## Build
 

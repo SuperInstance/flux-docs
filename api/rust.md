@@ -109,6 +109,97 @@ cargo bench   # Performance benchmarks
 2. **Zero dependencies** — no external crates.
 3. **Zero heap allocation in hot path** — flat arrays, fixed-size BFS queue.
 
+## check_vector — Detailed Single Check
+
+```rust
+use flux_fracture::check_vector;
+
+let result = check_vector(158.0, -40.0, 150.0);
+// CheckResult { violated: true, is_nan: false, below_lo: false, above_hi: true }
+
+let nan_result = check_vector(f64::NAN, 0.0, 100.0);
+// CheckResult { violated: true, is_nan: true, below_lo: false, above_hi: false }
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `violated` | `bool` | True if value is outside bounds or NaN |
+| `is_nan` | `bool` | True if value is NaN |
+| `below_lo` | `bool` | True if value < lower bound |
+| `above_hi` | `bool` | True if value > upper bound |
+
+## Serialization
+
+```rust
+use flux_fracture::{ConstraintEngine, SedimentStack};
+use serde_json;
+
+// Serialize
+let config = engine.to_json()?;
+std::fs::write("config.json", &config)?;
+
+// Deserialize
+let config_str = std::fs::read_to_string("config.json")?;
+let engine2 = ConstraintEngine::from_json(&config_str)?;
+
+// Sediment serialization
+let stack_json = stack.to_json()?;
+let stack2 = SedimentStack::from_json(&stack_json)?;
+```
+
+| Method | Description |
+|--------|-------------|
+| `engine.to_json()` | Serialize to JSON string |
+| `ConstraintEngine::from_json(s)` | Rebuild from JSON |
+| `stack.to_json()` | Serialize sediment layers |
+| `SedimentStack::from_json(s)` | Rebuild from JSON |
+
+## Aggregation
+
+```rust
+use flux_fracture::{batch_check, aggregate_masks, violation_frequency};
+
+// Batch check
+let results: Vec<CheckResult> = batch_check(&engine, &readings);
+
+// Aggregate worst case (bitwise OR)
+let worst = aggregate_masks(results.iter().map(|r| r.error_mask));
+
+// Per-constraint violation counts
+let freqs = violation_frequency(&masks, &names);
+```
+
+| Function | Description |
+|----------|-------------|
+| `batch_check(engine, readings)` | Check multiple value sets |
+| `aggregate_masks(masks)` | Bitwise OR of all masks |
+| `violation_frequency(masks, names)` | Count per-constraint violations |
+
+## Drift Detection
+
+```rust
+use flux_fracture::detect_drift;
+
+let drift = detect_drift(
+    &[92.0, 95.0, 102.0, 115.0, 148.0],
+    5.0,    // threshold
+    3,      // window
+    Some(150.0), // bound_hi
+);
+println!("Rate: {:.1}", drift.rate);              // 18.7
+println!("Drifting: {}", drift.is_drifting);      // true
+println!("Predicted: {:.1}", drift.predicted_next); // 166.3
+println!("To violation: {:?}", drift.readings_to_violation); // Some(0)
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `rate` | `f64` | Current rate of change |
+| `is_drifting` | `bool` | True if rate exceeds threshold |
+| `acceleration` | `f64` | Second derivative |
+| `predicted_next` | `f64` | Projected next value |
+| `readings_to_violation` | `Option<usize>` | Readings until limit hit |
+
 ## Related Crates
 
 | Crate | Purpose |

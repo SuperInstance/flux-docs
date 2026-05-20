@@ -143,3 +143,5 @@ Every implementation did the same thing:
 The error mask `10001001` means constraints 0, 3, and 7 failed. One byte. No heap. No iteration needed to ask "did anything fail?" — just `mask != 0`.
 
 **Next:** Understand *why* this data structure matters → [Error Masks](concepts/error-mask.md)
+
+**Go deeper:** [Sensor Dashboard Tutorial](tutorials/sensor-dashboard.md) — build a complete project · [FAQ](faq.md) — common questions

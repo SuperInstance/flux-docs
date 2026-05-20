@@ -31,6 +31,10 @@ The result: **24.9 billion checks per second on a laptop GPU**, zero false negat
 
 **API references:** [Python](api/python.md) · [Rust](api/rust.md) · [JavaScript](api/javascript.md) · [C](api/c.md)
 
+**Tutorials:** [Building a Sensor Dashboard](tutorials/sensor-dashboard.md) — complete real project walkthrough
+
+**FAQ:** [Frequently Asked Questions](faq.md) — common questions answered directly
+
 **Research:** [31 Modules](research/index.md) · [Grand Synthesis](research/grand-synthesis.md)
 
 ---

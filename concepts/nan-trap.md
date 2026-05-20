@@ -81,4 +81,51 @@ Short-circuit evaluation means NaN values skip the bounds comparison entirely. O
 
 **This is why "zero false negatives" is a theorem, not a claim.** The NaN check is part of the theorem's proof. Without it, the proof doesn't hold.
 
-**Next:** How we split independent constraints for parallel checking → [Fracture-Coalesce](fracture-coalesce.md)
+## Code Example
+
+```c
+#include <math.h>
+#include <stdint.h>
+
+/* FLUX check: NaN always violates */
+uint8_t flux_check(double val, double lo, double hi, int idx) {
+    uint8_t bit = (isnan(val) || val < lo || val > hi) ? 1 : 0;
+    return bit << idx;
+}
+
+/* Demonstration */
+int main() {
+    double values[] = {3.14, NAN, -5.0, 100.0};
+    double lo[] =     {0.0,  0.0,   0.0,   0.0};
+    double hi[] =     {10.0, 10.0,  10.0,  10.0};
+    uint8_t mask = 0;
+
+    for (int i = 0; i < 4; i++) {
+        mask |= flux_check(values[i], lo[i], hi[i], i);
+    }
+    // mask = 0b0110  (bit 1 = NaN, bit 2 = -5 < 0)
+    // The NaN at index 1 is CAUGHT, not silently passed
+}
+```
+
+```python
+from flux_lib import check_one
+
+# Without NaN trap: NaN < 5 is False, NaN > 10 is False → "passes" (BUG!)
+# With FLUX: NaN always violates
+assert check_one(float("nan"), 0, 100) == True  # violated = True
+assert check_one(50.0, 0, 100) == False          # passed
+assert check_one(float("inf"), 0, 100) == True   # violated
+```
+
+→ **Package:** [`flux-lib` (Python)](../api/python.md) · [`flux-fracture` (Rust)](../api/rust.md) · [`@flux/check` (JS)](../api/javascript.md) · [`flux_fracture.h` (C)](../api/c.md)
+
+## When Would I Use This?
+
+- **Any numeric system that accepts external input.** Sensor data, API responses, file parses — any of these can produce NaN. If your bounds check doesn't handle it, you have a silent failure.
+- **Financial systems.** A NaN price propagates silently through calculations. By the time the wrong number surfaces, the audit trail is corrupted.
+- **Embedded / real-time systems.** Uninitialized memory often reads as NaN. The first check should catch it before it reaches control logic.
+- **Data pipelines.** Missing values parsed as NaN slip through standard bounds checks. The NaN trap catches them at the gate.
+- **Every FLUX check, always.** This isn't optional in FLUX — it's the foundation of the zero-false-negative guarantee.
+
+**See also:** [Error Masks](error-mask.md) — where the NaN bit gets stored · [Sediment](sediment.md) — catching NaN-derived edge cases with layers · [Getting Started](../getting-started.md)
