@@ -32,3 +32,17 @@ The result: **24.9 billion checks per second on a laptop GPU**, zero false negat
 **API references:** [Python](api/python.md) · [Rust](api/rust.md) · [JavaScript](api/javascript.md) · [C](api/c.md)
 
 **Research:** [31 Modules](research/index.md) · [Grand Synthesis](research/grand-synthesis.md)
+
+---
+
+## Background You Don't Need
+
+Some repos in this ecosystem mention **Eisenstein integers**, **hex arithmetic**, and **sheaf cohomology**. You might run into these terms and wonder if you need a math degree to use FLUX.
+
+**You don't.**
+
+FLUX checks whether values are within bounds and packs the results into bits. That's it. The five-minute tutorial above works with zero math beyond basic comparison.
+
+The deeper mathematics — Eisenstein integers (a hexagonal lattice structure), sheaf cohomology (a way to check if distributed systems agree), thermodynamic analogies — exists in the [research modules](research/index.md) for people who want to understand *why* the architecture is what it is. It's depth for the curious, not a prerequisite for the practical.
+
+If you just want to check bounds in your code, start with [Getting Started](getting-started.md). The math will still be here when you want it.

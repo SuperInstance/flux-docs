@@ -72,8 +72,8 @@ These aren't limitations of old languages. They're *constraints that reveal the 
 | `flux-esp32` | ESP32 microcontroller |
 | `flux-hdc` | Hyperdimensional computing |
 | `flux-chapel` | Multi-node (Chapel) |
-| `flux-vm` | FLUX virtual machine |
-| `flux-compiler` | FLUX language compiler |
+| `flux-vm-v3` | 60-opcode stack-based VM |
+| `guardc-v3` | GUARD DSL → FLUX-C compiler |
 | `flux-isa` | Instruction set architecture |
 
 **Next:** Full old-language architecture analysis → [Old Language Architecture](old-architecture.md)

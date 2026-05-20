@@ -72,6 +72,13 @@ fn main() {
 npm install @flux/check
 ```
 
+> **If `npm install @flux/check` returns 404**, the package may not yet be published to the registry. Clone it directly:
+> ```bash
+> git clone https://github.com/SuperInstance/flux-check-js.git
+> cd flux-check-js && npm install && npm run build
+> ```
+> Then import from the local path.
+
 ```js
 import { ConstraintEngine } from "@flux/check";
 
